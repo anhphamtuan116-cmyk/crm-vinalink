@@ -1,43 +1,46 @@
-# Tài Liệu Đặc Tả Chức Năng Bổ Sung (Functional Spec Additions)
+# Tài Liệu Đặc Tả Chức Năng Bổ Sung (Functional Spec Additions) - Bản Cập Nhật
 ## Dự án: CRM Yến Sào Vĩnh Hưng
 
-Tài liệu này đặc tả chi tiết 3 nhóm tính năng bổ sung dựa trên PRD, Design Brief, và Schema Supabase hiện có.
+Tài liệu này được viết lại để đồng bộ chính xác với cơ sở dữ liệu thực tế tại `CRM-VNL-Demo/supabase`, bao gồm các cấu trúc bảng (`01_schema.sql`), hàm tự động (`03_functions.sql`), và các chính sách bảo mật cấp dòng (`04_rls.sql`).
 
 ---
 
 ## 1. Nhóm Tính Năng: Công Việc (Tasks)
 
-Nhóm tính năng này quản lý các tác vụ hàng ngày của nhân viên bán hàng (gọi điện, gửi báo giá, chăm sóc lại...) gắn liền với khách hàng hoặc cơ hội bán hàng.
+Quản lý các tác vụ chăm sóc khách hàng hàng ngày của nhân viên, liên kết trực tiếp với dữ liệu Khách hàng (`leads`) hoặc Cơ hội (`opportunities`).
 
 ### 1.1 User Flow (Luồng Người Dùng)
-1. **Tạo công việc**:
-   * **Từ màn hình chi tiết Khách hàng/Cơ hội**: Người dùng nhấn "Tạo công việc" ➔ Hệ thống tự động điền thông tin Khách hàng/Cơ hội vào form ➔ Người dùng điền Tiêu đề, Mô tả, Hạn chót, Mức độ ưu tiên ➔ Nhấn "Lưu".
-   * **Từ màn hình Quản lý Công việc chung**: Người dùng nhấn "Tạo công việc mới" ➔ Điền form và chọn thủ công Khách hàng liên quan từ danh sách gợi ý (autocomplete) ➔ Nhấn "Lưu".
-2. **Xem danh sách và bộ lọc**: Người dùng xem danh sách công việc dạng bảng hoặc Kanban (phân chia theo trạng thái: Cần làm, Đang làm, Hoàn thành, Quá hạn).
-3. **Cập nhật công việc (Sửa / Đổi trạng thái)**:
-   * Click vào công việc để mở modal chỉnh sửa thông tin.
-   * Hoặc kéo thả thẻ công việc trên bảng Kanban để đổi trạng thái.
-   * Hoặc tích chọn vào checkbox nhanh để đổi trạng thái sang "Hoàn thành" (`done`).
+1. **Khởi tạo công việc**:
+   * **Từ trang chi tiết Lead/Opportunity**: Người dùng nhấn "Tạo công việc" ➔ Hệ thống tự động trích xuất và điền sẵn `lead_id` hoặc `opportunity_id` vào form.
+   * **Từ trang Quản lý công việc chung**: Người dùng nhấn "Tạo công việc mới" ➔ Tìm kiếm và chọn Khách hàng/Cơ hội liên quan bằng ô tìm kiếm gợi ý (Autocomplete).
+   * Điền Tiêu đề, Mô tả, đặt Hạn chót (Due date) và mức độ ưu tiên ➔ Nhấn "Lưu".
+2. **Cập nhật công việc**:
+   * Người dùng thay đổi trạng thái của công việc:
+     * Tích chọn hoàn thành nhanh trên danh sách ➔ Đổi trạng thái sang `done`.
+     * Hoặc kéo thả thẻ trên Kanban Board (`todo` ➔ `in_progress` ➔ `done`).
+   * Click vào công việc để mở modal thay đổi Tiêu đề, Mô tả, Hạn chót, Mức độ ưu tiên.
+3. **Xóa công việc**: Người dùng nhấn biểu tượng Thùng rác bên cạnh công việc để xóa khi không còn cần thiết.
 
 ### 1.2 UI Elements (Thành Phần Giao Diện)
-* **Nút bấm**: "Tạo công việc" (Primary Button).
+* **Nút bấm**: "Thêm công việc" (Primary Button).
 * **Modal Form**:
-  * `Tiêu đề` (Text Input - Bắt buộc).
-  * `Mô tả` (Textarea - Tùy chọn).
-  * `Khách hàng liên quan` (Autocomplete Search Select - Liên kết với bảng `leads`).
-  * `Thời hạn chót (Due date)` (DateTime Picker - Tùy chọn).
-  * `Mức độ ưu tiên` (Dropdown: Thấp, Trung bình, Cao - mặc định Trung bình).
-  * `Trạng thái` (Dropdown/Segmented Control: Mới, Đang làm, Hoàn thành).
-* **Bảng Kanban / List View**: Hiển thị thẻ công việc với màu sắc tương ứng với độ ưu tiên (Đỏ: Cao, Vàng: Trung bình, Xám: Thấp) và cảnh báo đỏ nếu công việc bị quá hạn (`overdue`).
+  * `Tiêu đề (title)`: Text Input (Bắt buộc).
+  * `Mô tả (description)`: Textarea (Tùy chọn).
+  * `Khách hàng (lead_id)`: Autocomplete Select từ bảng `leads` (Tùy chọn).
+  * `Cơ hội (opportunity_id)`: Autocomplete Select từ bảng `opportunities` (Tùy chọn).
+  * `Thời hạn (due_date)`: DateTime Picker (Tùy chọn).
+  * `Mức độ ưu tiên (priority)`: Select Dropdown (Thấp - `low`, Trung bình - `medium`, Cao - `high`).
+  * `Trạng thái (status)`: Select Dropdown (Cần làm - `todo`, Đang làm - `in_progress`, Hoàn thành - `done`, Quá hạn - `overdue`).
+* **Bảng danh sách / Kanban Board**: Hiển thị danh sách thẻ công việc kèm theo thông tin khách hàng liên kết. Các công việc có trạng thái `overdue` sẽ được tô viền đỏ hoặc gắn nhãn cảnh báo nổi bật.
 
 ### 1.3 Validation (Kiểm Tra Dữ Liệu)
-* **Tiêu đề**: Không được để trống, độ dài từ 5 đến 255 ký tự.
-* **Thời hạn chót (Due date)**: Phải là một ngày/giờ hợp lệ. Nếu thiết lập thời gian trong quá khứ, hệ thống sẽ hiển thị cảnh báo nhẹ nhưng vẫn cho phép lưu (phục vụ trường hợp ghi nhận lại các công việc đã làm trước đó).
-* **Quyền hạn**: Người phụ trách (`assigned_to`) phải là một UUID tồn tại trong bảng `profiles`.
+* **Tiêu đề (`title`)**: Bắt buộc nhập, tối đa 255 ký tự, không chứa khoảng trắng thừa.
+* **Người phụ trách (`assigned_to`)**: Mặc định là UUID của tài khoản đang đăng nhập (`auth.uid()`).
+* **Tính đồng nhất của Nhóm (`team_id`)**: Hệ thống tự động truy vấn và kế thừa `team_id` của Khách hàng (`leads`) hoặc Cơ hội (`opportunities`) được chọn để gán vào công việc, đảm bảo đồng bộ dữ liệu nhóm.
 
 ### 1.4 Trường Hợp Lỗi (Error Cases) & Hướng Xử Lý
-* **Lỗi quá hạn (Overdue status)**: Nếu công việc có `due_date < NOW()` và trạng thái khác `done`, hệ thống tự động hiển thị tag "Quá hạn" và chuyển đổi logic hiển thị (front-end hiển thị trạng thái `overdue` dù trong DB vẫn là `todo` hoặc `in_progress`).
-* **Lỗi phân quyền (RLS Violation)**: Khi Sales tìm cách sửa công việc của người khác ➔ Supabase trả về lỗi ➔ Hệ thống hiển thị Toast cảnh báo: *"Bạn không có quyền chỉnh sửa công việc này."*
+* **Lỗi Quá Hạn**: Trạng thái quá hạn (`overdue`) được kiểm soát chủ động ở DB thông qua hàm `mark_overdue_tasks()` chạy tự động hàng ngày lúc 00:05. Nếu do lỗi hệ thống cron không chạy, front-end sẽ có cơ chế so sánh phụ: nếu `due_date < NOW()` và status không phải `done` thì hiển thị giao diện ở trạng thái Quá hạn và gửi lệnh cập nhật nhẹ về DB.
+* **Lỗi phân quyền sửa đổi (RLS Violation)**: Nhân viên Sales chỉ được cập nhật trạng thái hoặc thông tin của công việc do chính mình phụ trách (`assigned_to = auth.uid()`). Nếu sửa công việc của người khác, Supabase sẽ trả về lỗi `403 Forbidden` ➔ Hiển thị Toast thông báo: *"Bạn không có quyền cập nhật công việc này."*
 
 ### 1.5 Supabase Queries (Truy Vấn Supabase)
 * **Tạo công việc**:
@@ -46,17 +49,17 @@ Nhóm tính năng này quản lý các tác vụ hàng ngày của nhân viên b
     .from('tasks')
     .insert([
       {
-        title: 'Gọi điện báo giá Yến Tinh Chế',
-        description: 'Khách yêu cầu báo giá đại lý cho 5kg',
-        lead_id: 'lead-uuid-123',
-        assigned_to: 'sales-uuid-999',
-        team_id: 'team-uuid-456', // Thừa hưởng từ lead
-        priority: 'high',
-        due_date: '2026-05-20T10:00:00+07:00'
+        title: 'Liên hệ tư vấn Yến Thô',
+        description: 'Gọi điện báo giá sỉ cho khách lẻ có tiềm năng lên đại lý',
+        lead_id: 'lead-uuid-1234',
+        assigned_to: (await supabase.auth.getUser()).data.user.id,
+        team_id: 'team-uuid-abcd', // Kế thừa từ lead_id
+        priority: 'medium',
+        due_date: '2026-05-25T15:30:00Z'
       }
     ]);
   ```
-* **Chỉnh sửa / Đổi trạng thái**:
+* **Đổi trạng thái hoàn thành**:
   ```javascript
   const { data, error } = await supabase
     .from('tasks')
@@ -64,56 +67,59 @@ Nhóm tính năng này quản lý các tác vụ hàng ngày của nhân viên b
       status: 'done',
       completed_at: new Date().toISOString()
     })
-    .eq('id', 'task-uuid-789');
+    .eq('id', 'task-uuid-5678');
   ```
-* **Lấy danh sách công việc của tôi (Sales)**:
+* **Xóa công việc**:
   ```javascript
   const { data, error } = await supabase
     .from('tasks')
-    .select(`
-      id, title, description, status, priority, due_date,
-      leads ( id, full_name, phone_primary )
-    `)
-    .order('due_date', { ascending: true });
+    .delete()
+    .eq('id', 'task-uuid-5678');
   ```
 
 ### 1.6 RLS (Chính Sách Bảo Mật) Liên Quan
-* Áp dụng chính sách `tasks_select`, `tasks_insert_sales`, `tasks_update_sales` trong file `04_rls.sql`:
-  * Nhân viên Sales chỉ được xem và sửa các công việc do chính mình phụ trách (`assigned_to = auth.uid()`).
-  * Trưởng nhóm (`team_lead`) và `admin` được xem và sửa toàn bộ công việc thuộc nhóm mình quản lý (`team_id = ANY(get_my_team_ids())`).
+* Theo file `04_rls.sql`:
+  * **Xem (`SELECT`)**: Người dùng xem được công việc của mình (`assigned_to = auth.uid()`), hoặc nếu là Team Lead thì xem được công việc của nhóm (`team_id = ANY(get_my_team_ids())`), hoặc Admin xem toàn bộ.
+  * **Thêm (`INSERT`)**: Sales chỉ được tạo task được gán cho chính mình (`assigned_to = auth.uid()`).
+  * **Sửa (`UPDATE`)**: Sales chỉ được sửa task của chính mình (`assigned_to = auth.uid()`).
+  * **Xóa (`DELETE`)**: Cho phép Admin, Team Lead của nhóm, hoặc chính Sales phụ trách xóa task đó (`tasks_delete_own` cho phép `assigned_to = auth.uid()`).
 
 ### 1.7 Tiêu Chỉ Nghiệm Thu (Acceptance Criteria)
-* [ ] Người dùng có thể tạo nhanh công việc từ trang chi tiết khách hàng và hệ thống tự liên kết đúng `lead_id`.
-* [ ] Nhân viên Sales A không thể xem hoặc sửa công việc của Sales B (ngoại trừ khi họ chung một nhóm và người xem là Team Lead/Admin).
-* [ ] Khi tích hoàn thành công việc, cột `completed_at` phải được ghi nhận thời gian thực tế và trạng thái đổi thành `done`.
+* [ ] Task được hiển thị đúng màu sắc theo mức độ ưu tiên trên giao diện.
+* [ ] Nhân viên Sales chỉ thao tác được trên các Task gán cho họ; nút sửa/xóa sẽ bị ẩn đối với Task của người khác.
+* [ ] Hàm tự động `mark_overdue_tasks()` trong file `03_functions.sql` hoạt động chính xác khi quét các công việc trễ hạn chót chưa hoàn thành.
 
 ---
 
 ## 2. Nhóm Tính Năng: Danh Sách Khách Hàng (Lead Lists)
 
-Cho phép người dùng phân nhóm khách hàng theo các chiến dịch hoặc tiêu chí cụ thể để dễ dàng quản lý và chăm sóc hàng loạt.
+Quản lý phân nhóm khách hàng tĩnh (Static Segment Lists) bằng cách liên kết nhiều Lead vào một danh sách để phục vụ cho các chiến dịch marketing hoặc chăm sóc đặc biệt.
 
 ### 2.1 User Flow (Luồng Người Dùng)
-1. **Tạo danh sách**: Người dùng vào mục "Nhóm khách hàng" ➔ Nhấn "Tạo danh sách mới" ➔ Điền tên danh sách và mô tả ➔ Nhấn "Xác nhận".
-2. **Thêm hàng loạt khách hàng vào danh sách**: Người dùng vào danh sách khách hàng chung ➔ Sử dụng bộ lọc hoặc tích chọn thủ công nhiều khách hàng ➔ Nhấn nút "Thêm vào nhóm" ➔ Chọn danh sách đích ➔ Hệ thống thêm các mối quan hệ vào bảng trung gian.
-3. **Quản lý danh sách thành viên**: Người dùng mở chi tiết danh sách ➔ Xem toàn bộ thành viên ➔ Tìm kiếm nhanh theo tên/SĐT trong danh sách ➔ Nhấn "Xóa khỏi nhóm" đối với thành viên muốn loại bỏ.
+1. **Tạo danh sách**: Người dùng vào trang quản trị danh sách ➔ Nhấn "Tạo danh sách" ➔ Nhập Tên và Mô tả danh sách ➔ Nhấn "Lưu".
+2. **Lưu nhiều khách hàng vào danh sách**:
+   * Người dùng vào bảng danh sách Leads chung.
+   * Tích chọn nhiều khách hàng muốn thêm.
+   * Nhấn nút "Thêm vào danh sách..." ở thanh công cụ hàng loạt ➔ Chọn danh sách đích ➔ Hệ thống ghi nhận mối quan hệ vào bảng nối `lead_list_members`.
+3. **Quản lý & Tìm kiếm thành viên**:
+   * Người dùng mở trang chi tiết của một danh sách cụ thể.
+   * Nhập từ khóa tìm kiếm (Tên hoặc Số điện thoại) để lọc nhanh các thành viên trong danh sách.
+4. **Xóa khách hàng khỏi danh sách**: Nhấn nút "Xóa khỏi nhóm" bên cạnh dòng thông tin khách hàng ➔ Xác nhận xóa liên kết mà không làm mất thông tin Lead gốc trong DB.
 
 ### 2.2 UI Elements (Thành Phần Giao Diện)
-* **Trang danh sách nhóm**: Hiển thị các nhóm khách hàng hiện có dưới dạng thẻ (Cards) kèm số lượng thành viên trong mỗi nhóm.
-* **Modal tạo nhóm**: Form đơn giản gồm `Tên danh sách` (Bắt buộc) và `Mô tả` (Tùy chọn).
-* **Nút hành động nhanh trên bảng khách hàng**: "Thêm vào danh sách..." (Hiện lên khi người dùng tích chọn ít nhất 1 dòng trên bảng).
-* **Trang chi tiết nhóm**: 
-  * Thanh tìm kiếm nhanh thành viên.
-  * Bộ lọc Phân khúc (Khách lẻ, Đại lý, VIP).
-  * Bảng danh sách thành viên kèm nút "Xóa khỏi nhóm" (icon Thùng rác/Remove).
+* **Trang danh sách nhóm**: Hiển thị các nhóm hiện tại dưới dạng lưới (Grid), mỗi thẻ hiển thị tên nhóm, mô tả, ngày tạo và tổng số lượng Lead đang có trong nhóm.
+* **Thanh tác vụ hàng loạt (Bulk Action Bar)**: Xuất hiện ở phía trên bảng Leads khi có ít nhất một dòng được tích chọn checkbox, chứa nút "Thêm vào danh sách".
+* **Modal chọn danh sách**: Dropdown tìm kiếm danh sách đích để thêm Lead vào.
+* **Trang chi tiết danh sách**: Bảng hiển thị thông tin thành viên (Họ tên, Số điện thoại, Email, Phân khúc, Ngày thêm) kèm nút "Xóa khỏi danh sách" (`Remove`).
 
 ### 2.3 Validation (Kiểm Tra Dữ Liệu)
-* **Tên danh sách**: Bắt buộc nhập, tối đa 100 ký tự. Không được trùng tên danh sách đối với cùng một người tạo hoặc cùng một nhóm.
-* **Ràng buộc thành viên**: Không được phép thêm trùng lặp một khách hàng vào cùng một danh sách (được đảm bảo bằng Khóa chính kết hợp `(list_id, lead_id)` trong bảng `lead_list_members`).
+* **Tên danh sách (`name`)**: Bắt buộc nhập, độ dài tối đa 255 ký tự.
+* **Quyền hạn của Sales khi tạo danh sách**: Nhân viên Sales chỉ được phép tạo danh sách cá nhân, trường `team_id` bắt buộc phải là `NULL`. Chỉ Admin và Team Lead mới được phép tạo danh sách liên kết với `team_id` của nhóm.
+* **Ngăn chặn trùng lặp thành viên**: Ràng buộc khóa chính phức hợp `PRIMARY KEY (list_id, lead_id)` trong bảng `lead_list_members` đảm bảo một khách hàng không thể bị thêm trùng lặp vào cùng một danh sách.
 
 ### 2.4 Trường Hợp Lỗi (Error Cases) & Hướng Xử Lý
-* **Trùng lặp thành viên**: Khi thêm hàng loạt, nếu có khách hàng đã tồn tại trong danh sách ➔ Hệ thống sử dụng cơ chế `ON CONFLICT DO NOTHING` trên DB để bỏ qua dòng trùng lặp và tiếp tục thêm các dòng khác mà không báo lỗi sập tiến trình.
-* **Khách hàng bị xóa khỏi hệ thống**: Nếu một khách hàng bị xóa vĩnh viễn khỏi bảng `leads` ➔ Ràng buộc `ON DELETE CASCADE` trên bảng `lead_list_members` sẽ tự động xóa khách hàng đó khỏi mọi danh sách liên quan mà không cần can thiệp thủ công.
+* **Lỗi thêm trùng lặp Lead**: Khi người dùng chọn thêm hàng loạt 10 Lead, nhưng có 2 Lead đã nằm sẵn trong danh sách ➔ Hệ thống sử dụng cú pháp `ON CONFLICT (list_id, lead_id) DO NOTHING` để bỏ qua 2 dòng đã có và lưu thành công 8 dòng còn lại mà không gây gián đoạn hay báo lỗi UI.
+* **Lead bị xóa khỏi CRM**: Nhờ khóa ngoại `ON DELETE CASCADE` kết nối từ bảng `leads` đến `lead_list_members`, khi xóa một Lead gốc khỏi hệ thống, thông tin thành viên của Lead đó trong tất cả danh sách liên quan cũng tự động bị xóa sạch.
 
 ### 2.5 Supabase Queries (Truy Vấn Supabase)
 * **Tạo danh sách**:
@@ -121,18 +127,23 @@ Cho phép người dùng phân nhóm khách hàng theo các chiến dịch hoặ
   const { data, error } = await supabase
     .from('lead_lists')
     .insert([
-      { name: 'Khách mua yến thô tháng 5', description: 'Chiến dịch tri ân khách hàng cũ', created_by: 'user-uuid' }
+      {
+        name: 'Đại lý Yến Sào miền Nam',
+        description: 'Danh sách đại lý cấp 1 và cấp 2 khu vực phía Nam',
+        created_by: 'user-uuid',
+        team_id: null // Hoặc team-uuid nếu là Team Lead/Admin tạo cho nhóm
+      }
     ]);
   ```
-* **Thêm khách hàng vào danh sách (Hàng loạt)**:
+* **Lưu nhiều khách hàng vào danh sách (Bulk Insert)**:
   ```javascript
-  const members = [
+  const leadsToAdd = [
     { list_id: 'list-uuid-1', lead_id: 'lead-uuid-A', added_by: 'user-uuid' },
     { list_id: 'list-uuid-1', lead_id: 'lead-uuid-B', added_by: 'user-uuid' }
   ];
   const { data, error } = await supabase
     .from('lead_list_members')
-    .insert(members); // Supabase hỗ trợ nhận mảng đối tượng để insert bulk
+    .insert(leadsToAdd);
   ```
 * **Xóa khách hàng khỏi danh sách**:
   ```javascript
@@ -151,88 +162,97 @@ Cho phép người dùng phân nhóm khách hàng theo các chiến dịch hoặ
       leads!inner ( id, full_name, phone_primary, segment )
     `)
     .eq('list_id', 'list-uuid-1')
-    .ilike('leads.full_name', '%Tuan Anh%'); // Tìm kiếm gần đúng theo tên khách hàng
+    .or('full_name.ilike.%tuan%,phone_primary.ilike.%090%'); // Tìm kiếm theo tên hoặc số điện thoại
   ```
 
 ### 2.6 RLS (Chính Sách Bảo Mật) Liên Quan
-* Áp dụng chính sách bảo mật của `lead_lists` và `lead_list_members`:
-  * Sales chỉ thấy các danh sách do mình tạo (`created_by = auth.uid()`).
-  * Team Lead thấy các danh sách của nhóm mình (`team_id = ANY(get_my_team_ids())`).
-  * Việc thêm/xóa thành viên chỉ được thực hiện nếu người dùng có quyền chỉnh sửa đối với danh sách đó.
+* Theo file `04_rls.sql`:
+  * **Xem danh sách**:
+    * Sales chỉ xem được danh sách do mình tạo (`created_by = auth.uid()`).
+    * Team Lead xem được danh sách của nhóm mình (`team_id = ANY(get_my_team_ids())`).
+    * Admin xem được toàn bộ.
+  * **Sửa / Thêm thành viên**: Chỉ người dùng có quyền xem danh sách đích tương ứng mới được phép thêm/xóa thành viên (`list_id IN (SELECT id FROM lead_lists WHERE created_by = auth.uid() OR team_id = ANY(get_my_team_ids()))`).
 
-### 2.7 Tiêu Chí Nghiệm Thu (Acceptance Criteria)
-* [ ] Tạo danh sách thành công và hiển thị chính xác số lượng thành viên thực tế.
-* [ ] Tính năng thêm hàng loạt hoạt động trơn tru (chọn 10 khách hàng và thêm vào danh sách chỉ bằng 1 click).
-* [ ] Việc xóa khách hàng khỏi danh sách KHÔNG được làm mất thông tin của khách hàng đó trong bảng `leads` gốc.
+### 2.7 Tiêu Chỉ Nghiệm Thu (Acceptance Criteria)
+* [ ] Tạo danh sách thành công và cập nhật tức thì số lượng Lead đếm được trong nhóm.
+* [ ] Kiểm tra trùng lặp hoạt động tốt, không xuất hiện lỗi màn hình khi cố ý thêm Lead đã tồn tại.
+* [ ] Tìm kiếm nhanh thành viên hoạt động chính xác theo từ khóa Tiếng Việt có dấu.
 
 ---
 
 ## 3. Nhóm Tính Năng: Import / Export CSV
 
-Hỗ trợ đưa dữ liệu khách hàng từ file excel/CSV vào hệ thống CRM nhanh chóng và xuất dữ liệu ra file phục vụ báo cáo.
+Hỗ trợ quản trị viên và nhân viên nhập nhanh lượng lớn dữ liệu khách hàng từ file bảng tính Excel/CSV vào CRM, hoặc xuất ngược dữ liệu ra để phục vụ lưu trữ, báo cáo ngoại tuyến.
 
 ### 3.1 User Flow (Luồng Người Dùng)
 1. **Import (Nhập dữ liệu)**:
-   * Bước 1: Người dùng vào trang "Khách hàng" ➔ Nhấn "Nhập từ CSV" ➔ Chọn file hoặc kéo thả file CSV vào vùng tải lên.
-   * Bước 2: Hệ thống đọc file, hiển thị bảng xem trước (preview) 5 dòng đầu tiên.
-   * Bước 3: Người dùng thực hiện map cột (ví dụ: Cột "Số điện thoại" trong file CSV tương ứng với trường "phone_primary" trong hệ thống).
-   * Bước 4: Người dùng chọn danh sách đích (tùy chọn) để gom toàn bộ khách hàng sắp nhập vào một nhóm cụ thể.
-   * Bước 5: Nhấn "Tiến hành nhập" ➔ Hệ thống chạy import hàng loạt ➔ Hiển thị kết quả: Số dòng nhập thành công, số dòng lỗi (nếu có).
+   * **Tải lên**: Người dùng bấm "Nhập từ CSV" ➔ Kéo thả file `.csv` vào vùng chỉ định.
+   * **Xem trước**: Hệ thống hiển thị bảng xem trước (Preview) tối đa 5 dòng dữ liệu đầu tiên đọc từ file.
+   * **Ánh xạ cột (Mapping)**: Hệ thống cố gắng tự động khớp tiêu đề cột của file CSV với các trường dữ liệu trong DB. Người dùng tinh chỉnh lại qua các hộp chọn Dropdown (ví dụ: cột "Tên Khách Hàng" map vào trường `full_name`).
+   * **Chọn đích đến**: Người dùng có thể chọn thêm nhanh toàn bộ Lead sắp import vào một "Danh sách khách hàng" cụ thể.
+   * **Thực thi**: Nhấn "Tiến hành nhập" ➔ Hệ thống chạy import hàng loạt ➔ Hiển thị báo cáo kết quả (Thành công: X dòng, Thất bại: Y dòng, chi tiết dòng lỗi).
 2. **Export (Xuất dữ liệu)**:
-   * Người dùng lọc danh sách khách hàng mong muốn ➔ Nhấn "Xuất file CSV" ➔ Hệ thống truy vấn toàn bộ dữ liệu khớp bộ lọc ➔ Tạo cấu trúc file CSV và tự động tải xuống máy tính của người dùng.
+   * Người dùng lọc dữ liệu mong muốn trên bảng khách hàng (hoặc chọn một Danh sách khách hàng cụ thể).
+   * Nhấn nút "Xuất file CSV" ➔ Hệ thống chuyển đổi dữ liệu hiển thị thành định dạng CSV và tải xuống trình duyệt của người dùng.
 
 ### 3.2 UI Elements (Thành Phần Giao Diện)
-* **Khu vực kéo thả file (Dropzone)**: Hỗ trợ định dạng `.csv`.
-* **Giao diện ánh xạ cột (Mapping Matrix)**:
-  * Hiển thị danh sách các trường trong DB CRM (Họ tên, SĐT, Email, Phân khúc, Ghi chú...).
-  * Mỗi trường đi kèm một Dropdown chứa danh sách các tiêu đề cột đọc được từ file CSV của người dùng để họ tự chọn ánh xạ.
-* **Bộ chọn danh sách đích**: Dropdown hiển thị các danh sách khách hàng của người dùng.
-* **Thanh tiến trình (Progress Bar)** và bảng thống kê kết quả nhập (thành công/thất bại).
+* **Khu vực kéo thả file**: Hộp thả file lớn (Dropzone) kèm hướng dẫn định dạng và file mẫu (Template download).
+* **Giao diện Mapping Matrix**:
+  * Cột bên trái: Các trường đích trong CRM (`Họ tên`, `Số điện thoại`, `Email`, `Địa chỉ`, `Phân khúc`, `Ghi chú`, `Sản phẩm quan tâm`).
+  * Cột bên phải: Dropdown chứa danh sách tiêu đề cột trích xuất từ file CSV.
+* **Bộ chọn danh sách**: Dropdown chứa danh sách `lead_lists` có sẵn của người dùng.
+* **Báo cáo kết quả**: Bảng tóm tắt hiển thị số dòng lỗi kèm lý do (ví dụ: *"Dòng 15: Số điện thoại không hợp lệ"*).
 
 ### 3.3 Validation (Kiểm Tra Dữ Liệu)
-* **Định dạng file**: Chỉ chấp nhận file `.csv`, dung lượng tối đa 5MB.
-* **Trường bắt buộc**: Trường `Họ tên (full_name)` bắt buộc phải được map với một cột trong file CSV và giá trị không được trống.
-* **Chuẩn hóa Phân khúc (Segment)**: Nếu trong CSV có cột phân khúc, giá trị phải được chuẩn hóa về khớp với enum (`retail` - Khách lẻ, `agent` - Đại lý, `vip` - VIP). Nếu không khớp hoặc để trống, hệ thống tự động gán mặc định là `retail`.
-* **Số điện thoại**: Hệ thống tự động loại bỏ khoảng trắng và các ký tự đặc biệt không hợp lệ trong số điện thoại trước khi lưu.
+* **Loại và kích thước file**: Chỉ nhận file có đuôi `.csv`, dung lượng nhỏ hơn 5MB để tránh quá tải trình duyệt.
+* **Trường bắt buộc**: Trường `Họ tên (full_name)` trong CRM phải được map với một cột trong file CSV và giá trị không được trống ở bất kỳ dòng nào.
+* **Định dạng Số điện thoại**: Tự động loại bỏ các ký tự lạ, chỉ giữ lại số và ký tự `+` ở đầu.
+* **Chuẩn hóa giá trị Enum**:
+  * `segment` (Phân khúc) tự động chuyển về chữ thường và khớp với các giá trị: `retail`, `agent`, `vip`. Nếu không khớp, tự động gán mặc định là `retail`.
+  * `product_interests` (Sản phẩm quan tâm) là một mảng chuỗi (`product_interest[]`). Hệ thống cần tách chuỗi bằng dấu phẩy trong file CSV để chuyển thành dạng mảng DB (`raw_nest`, `stewed_nest`, `refined_nest`).
 
 ### 3.4 Trường Hợp Lỗi (Error Cases) & Hướng Xử Lý
-* **Lỗi trùng lặp Số điện thoại**: Theo PRD, nếu số điện thoại đã tồn tại trong hệ thống, hệ thống sẽ thực hiện cập nhật đè (Upsert) thông tin mới lên khách hàng cũ hoặc bỏ qua (tùy người dùng chọn cấu hình trước khi nhập).
-* **Lỗi định dạng mã hóa (Encoding)**: Đối với các file CSV lưu tiếng Việt không đúng chuẩn UTF-8 (thường bị lỗi font hiển thị dấu hỏi hoặc ký tự lạ) ➔ Front-end tự động phát hiện mã hóa và chuyển về định dạng UTF-8 trước khi xử lý.
+* **Trùng lặp Số điện thoại**: Để tránh trùng lặp dữ liệu khách hàng, hệ thống sử dụng cơ chế `UPSERT` dựa trên trường `phone_primary`. Nếu số điện thoại đã tồn tại trong DB, hệ thống sẽ cập nhật đè thông tin mới từ file CSV lên bản ghi cũ.
+* **Lỗi phân quyền khi Import (RLS Validation)**: 
+  * Đối với nhân viên Sales, khi import dữ liệu, hệ thống bắt buộc phải gán `assigned_to` bằng UUID của chính nhân viên đó (`auth.uid()`).
+  * Sales không được phép import khách hàng và gán cho người khác (được bảo vệ bởi điều kiện `WITH CHECK (assigned_to = auth.uid())` của RLS `leads_insert_sales`). Nếu cố tình sửa đổi `assigned_to` trong file CSV, Supabase sẽ chặn đứng giao dịch.
 
 ### 3.5 Supabase Queries (Truy Vấn Supabase)
-* **Bulk Insert / Upsert Leads**:
+* **Thực hiện Nhập hàng loạt (Bulk Upsert)**:
   ```javascript
-  // Mảng dữ liệu sau khi đã map cột và chuẩn hóa
-  const leadsToImport = [
-    { full_name: 'Nguyễn Văn A', phone_primary: '0901234567', segment: 'retail', created_by: 'user-uuid' },
-    { full_name: 'Đại lý Vĩnh Hưng', phone_primary: '0988888888', segment: 'agent', created_by: 'user-uuid' }
+  const leadsData = [
+    { full_name: 'Trần Thị B', phone_primary: '0912345678', email: 'b@example.com', segment: 'vip', created_by: 'sales-uuid-1', assigned_to: 'sales-uuid-1' },
+    { full_name: 'Đại lý Yến Vang', phone_primary: '0977777777', segment: 'agent', created_by: 'sales-uuid-1', assigned_to: 'sales-uuid-1' }
   ];
   
-  // Thực hiện nhập hàng loạt. Sử dụng onConflict để upsert nếu trùng số điện thoại
+  // Thực hiện lưu hàng loạt vào DB
   const { data, error } = await supabase
     .from('leads')
-    .upsert(leadsToImport, { onConflict: 'phone_primary' });
+    .upsert(leadsData, { onConflict: 'phone_primary' }) // Nếu trùng SĐT chính, tự động cập nhật thông tin
+    .select('id');
   ```
-* **Bulk Insert vào Danh sách đích** (nếu người dùng chọn lưu vào danh sách):
+* **Liên kết thành viên sau khi Import thành công**:
   ```javascript
-  // Sau khi lấy được danh sách UUID của các Leads vừa import thành công
-  const listMembers = importedLeads.map(lead => ({
-    list_id: 'target-list-uuid',
-    lead_id: lead.id,
-    added_by: 'user-uuid'
-  }));
-  
-  await supabase
-    .from('lead_list_members')
-    .insert(listMembers);
+  if (targetListId && data) {
+    const listMembers = data.map(lead => ({
+      list_id: targetListId,
+      lead_id: lead.id,
+      added_by: 'user-uuid'
+    }));
+    
+    await supabase
+      .from('lead_list_members')
+      .insert(listMembers);
+  }
   ```
 
 ### 3.6 RLS (Chính Sách Bảo Mật) Liên Quan
-* Khi import dữ liệu, hệ thống tự động gán `created_by = auth.uid()` và `assigned_to = auth.uid()` (đối với nhân viên Sales) để tuân thủ chính sách RLS:
-  * Sales chỉ được phép import khách hàng do họ phụ trách. Họ không được phép gán khách hàng mới cho người khác.
-  * Team Lead có thể gán các khách hàng import cho các thành viên trong nhóm mình nhờ chính sách `leads_insert_team_lead`.
+* **Ghi nhận dữ liệu**:
+  * Khi import, các bản ghi của Sales tạo ra phải đảm bảo: `assigned_to = auth.uid()`. RLS `leads_insert_sales` và `leads_update_sales` sẽ từ chối nếu có bất kỳ dòng nào vi phạm điều kiện này.
+  * Team Lead được phép import và phân bổ Lead cho các thành viên trực thuộc thông qua chính sách `leads_insert_team_lead` (cho phép chèn Lead có `team_id` thuộc quyền quản lý của Team Lead đó).
 
 ### 3.7 Tiêu Chỉ Nghiệm Thu (Acceptance Criteria)
-* [ ] Nhập file CSV tiếng Việt có dấu hiển thị chính xác không bị lỗi font chữ.
-* [ ] Hệ thống báo lỗi rõ ràng ở dòng cụ thể nếu dòng đó thiếu trường bắt buộc (ví dụ: dòng thứ 12 thiếu cột Họ tên).
-* [ ] Dữ liệu xuất ra (Export) phải giữ nguyên các bộ lọc hiện tại trên màn hình giao diện (xuất đúng những gì đang lọc thấy).
+* [ ] Nhập thành công danh sách khách hàng từ file CSV có dấu tiếng Việt, không bị vỡ font chữ (hỗ trợ đọc mã hóa UTF-8).
+* [ ] Tự động cập nhật đè (Upsert) chính xác thông tin nếu trùng số điện thoại chính (`phone_primary`), không tạo ra bản ghi mới trùng lặp.
+* [ ] Hệ thống chỉ ra chính xác số thứ tự dòng bị lỗi dữ liệu trong file CSV để người dùng dễ dàng chỉnh sửa lại.
+* [ ] Xuất dữ liệu ra file CSV tải xuống chứa đầy đủ và đúng định dạng các cột thông tin khách hàng đang hiển thị.
